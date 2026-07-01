@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useState, Suspense } from "react";
+import React, { useEffect, useRef, useState, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { CheckCircle2, AlertTriangle, Download, ArrowRight, Loader2 } from "lucide-react";
@@ -17,7 +17,21 @@ function ThankYouContent() {
     amountPaid?: number;
   } | null>(null);
 
+  // Ensures verification + Purchase event run only once, even if the URL changes.
+  const processedRef = useRef(false);
+
+  // Removes sensitive payment IDs/signature from the address bar without a
+  // navigation (keeps React state, so the download button stays visible).
+  const cleanUrl = () => {
+    if (typeof window !== "undefined") {
+      window.history.replaceState({}, "", "/thank-you");
+    }
+  };
+
   useEffect(() => {
+    if (processedRef.current) return;
+    processedRef.current = true;
+
     const trackPurchase = (value?: number, eventId?: string) => {
       if (typeof window !== "undefined" && (window as any).fbq) {
         (window as any).fbq(
@@ -44,6 +58,7 @@ function ThankYouContent() {
           });
           trackPurchase(undefined, orderIdParam || undefined);
           setLoading(false);
+          cleanUrl();
           return;
         }
 
@@ -65,6 +80,7 @@ function ThankYouContent() {
           setOrderDetails({ orderId: data.orderId, productName: data.productName, amountPaid: data.amountPaid });
           trackPurchase(data.amountPaid, data.orderId);
           setLoading(false);
+          cleanUrl();
           return;
         }
 
@@ -90,10 +106,13 @@ function ThankYouContent() {
           setOrderDetails({ orderId: data.orderId, productName: data.productName, amountPaid: data.amountPaid });
           trackPurchase(data.amountPaid, data.orderId);
           setLoading(false);
+          cleanUrl();
           return;
         }
 
-        setError("No payment parameters found.");
+        // No payment params (e.g. user refreshed after the URL was cleaned).
+        // Show a friendly success note instead of an error — the link is in their email.
+        setOrderDetails({ orderId: "—", productName: "Your order" });
         setLoading(false);
       } catch (err: any) {
         console.error("Verification error:", err);
@@ -165,6 +184,15 @@ function ThankYouContent() {
                 <Download className="w-5 h-5" />
                 <span>{isGodReels ? "Access Your Bundle" : "Download File"}</span>
               </a>
+            </div>
+          )}
+
+          {!downloadUrl && (
+            <div className="mb-8 bg-orange-50 border border-orange-200 rounded-xl p-4 max-w-md mx-auto">
+              <p className="text-sm text-gray-700">
+                📩 Your download link has been sent to your <b>email</b>. Please check your inbox
+                (and spam folder) to access your bundle.
+              </p>
             </div>
           )}
 

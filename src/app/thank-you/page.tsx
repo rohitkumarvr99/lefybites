@@ -18,6 +18,12 @@ function ThankYouContent() {
   } | null>(null);
 
   useEffect(() => {
+    const trackPurchase = (value?: number) => {
+      if (typeof window !== "undefined" && (window as any).fbq) {
+        (window as any).fbq("track", "Purchase", { value: value ?? 0, currency: "INR" });
+      }
+    };
+
     const verifyPayment = async () => {
       try {
         const tokenParam = searchParams.get("token");
@@ -31,6 +37,7 @@ function ThankYouContent() {
               ? "600+ AI Animated God Reels Bundle"
               : "Your Order",
           });
+          trackPurchase();
           setLoading(false);
           return;
         }
@@ -51,6 +58,7 @@ function ThankYouContent() {
 
           setDownloadUrl(data.downloadUrl);
           setOrderDetails({ orderId: data.orderId, productName: data.productName, amountPaid: data.amountPaid });
+          trackPurchase(data.amountPaid);
           setLoading(false);
           return;
         }
@@ -75,6 +83,7 @@ function ThankYouContent() {
 
           setDownloadUrl(data.downloadUrl);
           setOrderDetails({ orderId: data.orderId, productName: data.productName, amountPaid: data.amountPaid });
+          trackPurchase(data.amountPaid);
           setLoading(false);
           return;
         }

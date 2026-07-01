@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, Suspense } from "react";
+import React, { useState, useEffect, Suspense } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
@@ -30,6 +30,17 @@ function BuyContent() {
 
   // Live price from product config (god-reels = ₹148).
   const productPrice = prodConfig.price;
+
+  // Facebook Pixel: track that the checkout page was viewed.
+  useEffect(() => {
+    if (typeof window !== "undefined" && (window as any).fbq) {
+      (window as any).fbq("track", "InitiateCheckout", {
+        value: productPrice,
+        currency: "INR",
+        content_name: prodConfig.name,
+      });
+    }
+  }, [productPrice, prodConfig.name]);
 
   // Form states
   const [checkoutName, setCheckoutName] = useState("");

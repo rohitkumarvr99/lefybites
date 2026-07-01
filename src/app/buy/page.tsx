@@ -28,8 +28,8 @@ function BuyContent() {
   const prodConfig = getProduct(productId);
   const isGodReels = prodConfig.id === "god-reels";
 
-  // Test price: set to 10 for live testing. Change to prodConfig.price in production.
-  const productPrice = 10;
+  // Live price from product config (god-reels = ₹148).
+  const productPrice = prodConfig.price;
 
   // Form states
   const [checkoutName, setCheckoutName] = useState("");

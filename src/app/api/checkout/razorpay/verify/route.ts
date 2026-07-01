@@ -6,6 +6,7 @@ import prisma from "@/lib/db";
 import { signToken } from "@/lib/crypto";
 import { getProduct } from "@/config/products";
 import { buildOrderEmail, buildOrderEmailText } from "@/lib/emailTemplate";
+import { sendCapiEvent, getCapiUserFromRequest } from "@/lib/facebook";
 
 export async function POST(req: Request) {
   try {
@@ -142,6 +143,19 @@ export async function POST(req: Request) {
       console.log(
         "[RESEND NOT CONFIG] Resend API key is missing or placeholder. Bypassing email sending. Link was logged above."
       );
+    }
+
+    // Meta Conversions API — server-side Purchase (deduped with the browser pixel via event_id).
+    if (justPaid) {
+      const capiUser = getCapiUserFromRequest(req);
+      await sendCapiEvent({
+        eventName: "Purchase",
+        eventId: order.orderId,
+        eventSourceUrl: `${appUrl}/thank-you`,
+        value: amountInRupees,
+        currency: "INR",
+        user: { ...capiUser, email: order.email, phone: order.phone },
+      });
     }
 
     return NextResponse.json({

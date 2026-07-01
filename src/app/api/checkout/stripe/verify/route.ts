@@ -5,6 +5,7 @@ import prisma from "@/lib/db";
 import { signToken } from "@/lib/crypto";
 import { getProduct } from "@/config/products";
 import { buildOrderEmail, buildOrderEmailText } from "@/lib/emailTemplate";
+import { sendCapiEvent, getCapiUserFromRequest } from "@/lib/facebook";
 
 export async function GET(req: Request) {
   try {
@@ -110,6 +111,17 @@ export async function GET(req: Request) {
           console.error("Resend error in Stripe verification:", emailErr);
         }
       }
+
+      // Meta Conversions API — server-side Purchase (deduped with browser pixel via event_id).
+      const capiUser = getCapiUserFromRequest(req);
+      await sendCapiEvent({
+        eventName: "Purchase",
+        eventId: order.orderId,
+        eventSourceUrl: `${appUrl}/thank-you`,
+        value: amountInRupees,
+        currency: "INR",
+        user: { ...capiUser, email: order.email, phone: order.phone },
+      });
     }
 
     // Generate secure download token
